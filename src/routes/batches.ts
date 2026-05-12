@@ -4,7 +4,6 @@ import { prisma } from "../lib/prisma";
 
 const router = Router();
 
-// Get all batches (student sees enrolled, admin sees all)
 router.get("/", authenticate, async (req: AuthRequest, res) => {
   const user = req.user!;
   const activeOnly = req.query.active === "true";
@@ -27,7 +26,6 @@ router.get("/", authenticate, async (req: AuthRequest, res) => {
   res.json(batches);
 });
 
-// Create batch (admin only)
 router.post("/", authenticate, requireAdmin, async (req: AuthRequest, res) => {
   const { name, description, startDate, weeks } = req.body;
 
@@ -58,7 +56,6 @@ router.post("/", authenticate, requireAdmin, async (req: AuthRequest, res) => {
   res.json(batch);
 });
 
-// Get single batch
 router.get("/:id", authenticate, async (req: AuthRequest, res) => {
   const batch = await prisma.batch.findUnique({
     where: { id: req.params.id },
@@ -86,17 +83,20 @@ router.get("/:id", authenticate, async (req: AuthRequest, res) => {
   res.json(batch);
 });
 
-// Toggle active
 router.patch("/:id", authenticate, requireAdmin, async (req: AuthRequest, res) => {
-  const { isActive } = req.body;
+  const { isActive, name, description } = req.body;
+  const data: any = {};
+  if (typeof isActive === "boolean") data.isActive = isActive;
+  if (name !== undefined) data.name = name;
+  if (description !== undefined) data.description = description;
+
   const batch = await prisma.batch.update({
     where: { id: req.params.id },
-    data: { isActive },
+    data,
   });
   res.json(batch);
 });
 
-// Delete batch
 router.delete("/:id", authenticate, requireAdmin, async (req: AuthRequest, res) => {
   await prisma.batch.delete({ where: { id: req.params.id } });
   res.json({ success: true });
