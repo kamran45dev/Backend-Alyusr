@@ -19,6 +19,11 @@ router.post("/", authenticate, async (req: AuthRequest, res) => {
 
   if (!day) return res.status(404).json({ error: "Day not found" });
 
+  // Block submission if day is locked
+  if (day.isLocked) {
+    return res.status(403).json({ error: "Day is locked. Cannot submit." });
+  }
+
   const enrollment = await prisma.enrollment.findFirst({
     where: { userId: user.id, batchId: day.week.batchId },
   });
@@ -40,18 +45,6 @@ router.post("/", authenticate, async (req: AuthRequest, res) => {
       textAnswer: textAnswer || null,
     },
   });
-
-  // Unlock next day
-  const nextDay = await prisma.day.findFirst({
-    where: { weekId: day.weekId, dayNumber: day.dayNumber + 1 },
-  });
-
-  if (nextDay) {
-    await prisma.day.update({
-      where: { id: nextDay.id },
-      data: { isLocked: false, unlockAt: new Date() },
-    });
-  }
 
   res.json(submission);
 });

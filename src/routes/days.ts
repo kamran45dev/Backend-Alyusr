@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authenticate, AuthRequest } from "../middleware/auth";
+import { authenticate, requireAdmin, AuthRequest } from "../middleware/auth";
 import { prisma } from "../lib/prisma";
 
 const router = Router();
@@ -28,27 +28,30 @@ router.get("/:id", authenticate, async (req: AuthRequest, res) => {
     return res.status(403).json({ error: "Not enrolled" });
   }
 
-  // Auto-unlock check for students
+  // Students CANNOT access locked days at all
   if (user.role === "STUDENT" && day.isLocked) {
-    const prevDay = await prisma.day.findFirst({
-      where: {
-        weekId: day.weekId,
-        dayNumber: day.dayNumber - 1,
-      },
-      include: { submissions: { where: { userId: user.id } } },
-    });
-
-    if (prevDay && prevDay.submissions.length === 0) {
-      return res.status(403).json({ error: "Complete previous day first" });
-    }
-
-    if (prevDay && prevDay.submissions.length > 0) {
-      await prisma.day.update({ where: { id: day.id }, data: { isLocked: false } });
-      day.isLocked = false;
-    }
+    return res.status(403).json({ error: "Day is locked. Wait for admin to unlock." });
   }
 
   res.json({ ...day, slides: JSON.parse(day.slides) });
+});
+
+// Admin unlocks a day
+router.patch("/:id/unlock", authenticate, requireAdmin, async (req: AuthRequest, res) => {
+  const day = await prisma.day.update({
+    where: { id: req.params.id },
+    data: { isLocked: false, unlockAt: new Date() },
+  });
+  res.json(day);
+});
+
+// Admin locks a day
+router.patch("/:id/lock", authenticate, requireAdmin, async (req: AuthRequest, res) => {
+  const day = await prisma.day.update({
+    where: { id: req.params.id },
+    data: { isLocked: true, unlockAt: null },
+  });
+  res.json(day);
 });
 
 export default router;
