@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STUDENT
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  DROPPED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+}
+
+enum SubmissionStatus {
+  PENDING
+  REVIEWED
+}
+
+model User {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  email         String    @unique
+  name          String?
+  image         String?
+  role          Role      @default(STUDENT)
+  emailVerified DateTime? @db.Date
+  enrollments   Enrollment[]
+  submissions   Submission[]
+  messages      Message[]
+  createdAt     DateTime  @default(now()) @db.Date
+}
+
+model Batch {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String?
+  startDate   DateTime     @db.Date
+  endDate     DateTime?    @db.Date
+  isActive    Boolean      @default(true)
+  weeks       Week[]
+  enrollments Enrollment[]
+  messages    Message[]
+  createdAt   DateTime     @default(now()) @db.Date
+}
+
+model Enrollment {
+  id            String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String           @db.ObjectId
+  batchId       String           @db.ObjectId
+  status        EnrollmentStatus @default(ACTIVE)
+  paymentStatus PaymentStatus    @default(PENDING)
+  joinedAt      DateTime         @default(now()) @db.Date
+  user          User             @relation(fields: [userId], references: [id])
+  batch         Batch            @relation(fields: [batchId], references: [id])
+
+  @@unique([userId, batchId])
+}
+
+model Week {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  batchId    String   @db.ObjectId
+  weekNumber Int
+  title      String
+  days       Day[]
+  batch      Batch    @relation(fields: [batchId], references: [id])
+
+  @@unique([batchId, weekNumber])
+}
+
+model Day {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  weekId       String        @db.ObjectId
+  dayNumber    Int
+  title        String
+  slides       String
+  isLocked     Boolean       @default(true)
+  unlockAt     DateTime?     @db.Date
+  submissions  Submission[]
+  week         Week          @relation(fields: [weekId], references: [id])
+
+  @@unique([weekId, dayNumber])
+}
+
+model Submission {
+  id            String           @id @default(auto()) @map("_id") @db.ObjectId
+  dayId         String           @db.ObjectId
+  userId        String           @db.ObjectId
+  stackblitzUrl String
+  textAnswer    String?
+  status        SubmissionStatus @default(PENDING)
+  marks         Int?
+  feedback      String?
+  submittedAt   DateTime         @default(now()) @db.Date
+  reviewedAt    DateTime?        @db.Date
+  day           Day              @relation(fields: [dayId], references: [id])
+  user          User             @relation(fields: [userId], references: [id])
+
+  @@unique([dayId, userId])
+}
+
+model Message {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  batchId   String   @db.ObjectId
+  userId    String   @db.ObjectId
+  content   String
+  createdAt DateTime @default(now()) @db.Date
+  batch     Batch    @relation(fields: [batchId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+}
