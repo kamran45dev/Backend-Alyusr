@@ -13,7 +13,19 @@ router.get("/", authenticate, async (req: AuthRequest, res) => {
     include: {
       weeks: {
         include: {
-          days: { orderBy: { dayNumber: "asc" } },
+          days: {
+            select: {
+              id: true,
+              dayNumber: true,
+              title: true,
+              isLocked: true,
+              submissions: user.role === "STUDENT" ? {
+                where: { userId: user.id },
+                select: { id: true, status: true, marks: true },
+              } : undefined,
+            },
+            orderBy: { dayNumber: "asc" },
+          },
         },
         orderBy: { weekNumber: "asc" },
       },
@@ -63,7 +75,14 @@ router.get("/:id", authenticate, async (req: AuthRequest, res) => {
       weeks: {
         include: {
           days: {
-            include: {
+            select: {
+              id: true,
+              weekId: true,
+              dayNumber: true,
+              title: true,
+              slides: true,
+              isLocked: true,
+              unlockAt: true,
               submissions: req.user!.role === "ADMIN" ? {
                 include: { user: { select: { id: true, name: true, email: true, image: true } } },
               } : undefined,
