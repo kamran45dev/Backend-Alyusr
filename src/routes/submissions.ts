@@ -24,6 +24,13 @@ router.post("/", authenticate, async (req: AuthRequest, res) => {
     return res.status(403).json({ error: "Day is locked. Cannot submit." });
   }
 
+  // Block submission if day is not yet unlocked
+  if (day.unlockAt && new Date() < day.unlockAt) {
+    return res.status(403).json({
+      error: "Day is not yet unlocked. Submissions are closed until unlock time.",
+    });
+  }
+
   const enrollment = await prisma.enrollment.findFirst({
     where: { userId: user.id, batchId: day.week.batchId },
   });

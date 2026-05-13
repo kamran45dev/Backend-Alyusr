@@ -19,6 +19,7 @@ router.get("/", authenticate, async (req: AuthRequest, res) => {
               dayNumber: true,
               title: true,
               isLocked: true,
+              deadline: true,
               submissions: user.role === "STUDENT" ? {
                 where: { userId: user.id },
                 select: { id: true, status: true, marks: true },
@@ -57,6 +58,7 @@ router.post("/", authenticate, requireAdmin, async (req: AuthRequest, res) => {
               slides: JSON.stringify(d.slides || []),
               isLocked: di !== 0 || wi !== 0,
               unlockAt: wi === 0 && di === 0 ? new Date() : null,
+              deadline: d.deadline ? new Date(d.deadline) : null,
             })),
           },
         })),
@@ -83,6 +85,7 @@ router.get("/:id", authenticate, async (req: AuthRequest, res) => {
               slides: true,
               isLocked: true,
               unlockAt: true,
+              deadline: true,
               submissions: req.user!.role === "ADMIN" ? {
                 include: { user: { select: { id: true, name: true, email: true, image: true } } },
               } : undefined,
@@ -103,11 +106,13 @@ router.get("/:id", authenticate, async (req: AuthRequest, res) => {
 });
 
 router.patch("/:id", authenticate, requireAdmin, async (req: AuthRequest, res) => {
-  const { isActive, name, description } = req.body;
+  const { isActive, name, description, startDate, endDate } = req.body;
   const data: any = {};
   if (typeof isActive === "boolean") data.isActive = isActive;
   if (name !== undefined) data.name = name;
   if (description !== undefined) data.description = description;
+  if (startDate !== undefined) data.startDate = new Date(startDate);
+  if (endDate !== undefined) data.endDate = endDate ? new Date(endDate) : null;
 
   const batch = await prisma.batch.update({
     where: { id: req.params.id },
@@ -117,7 +122,28 @@ router.patch("/:id", authenticate, requireAdmin, async (req: AuthRequest, res) =
 });
 
 router.delete("/:id", authenticate, requireAdmin, async (req: AuthRequest, res) => {
-  await prisma.batch.delete({ where: { id: req.params.id } });
+  const batchId = req.params.id;
+
+  // Must delete in order: submissions → days → weeks → messages → enrollments → batch
+  // Prisma + MongoDB does NOT cascade automatically
+
+  const weeks = await prisma.week.findMany({
+    where: { batchId },
+    include: { days: { select: { id: true } } },
+  });
+
+  const dayIds = weeks.flatMap((w) => w.days.map((d) => d.id));
+
+  if (dayIds.length > 0) {
+    await prisma.submission.deleteMany({ where: { dayId: { in: dayIds } } });
+    await prisma.day.deleteMany({ where: { id: { in: dayIds } } });
+  }
+
+  await prisma.week.deleteMany({ where: { batchId } });
+  await prisma.message.deleteMany({ where: { batchId } });
+  await prisma.enrollment.deleteMany({ where: { batchId } });
+  await prisma.batch.delete({ where: { id: batchId } });
+
   res.json({ success: true });
 });
 

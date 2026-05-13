@@ -15,7 +15,7 @@ router.get("/:id", authenticate, async (req: AuthRequest, res) => {
         where: { userId: user.id },
       },
     },
-  });
+  }) as any;
 
   if (!day) return res.status(404).json({ error: "Not found" });
 
@@ -33,7 +33,15 @@ router.get("/:id", authenticate, async (req: AuthRequest, res) => {
     return res.status(403).json({ error: "Day is locked. Wait for admin to unlock." });
   }
 
-  res.json({ ...day, slides: JSON.parse(day.slides) });
+  // Add deadline status to response
+  const now = new Date();
+  const isExpired = day.deadline ? now > day.deadline : false;
+
+  res.json({
+    ...day,
+    slides: JSON.parse(day.slides),
+    isExpired,
+  });
 });
 
 // Admin unlocks a day
@@ -51,6 +59,20 @@ router.patch("/:id/lock", authenticate, requireAdmin, async (req: AuthRequest, r
     where: { id: req.params.id },
     data: { isLocked: true, unlockAt: null },
   });
+  res.json(day);
+});
+
+// Admin sets or clears deadline on a day
+router.patch("/:id/deadline", authenticate, requireAdmin, async (req: AuthRequest, res) => {
+  const { deadline } = req.body;
+
+  const day = await prisma.day.update({
+    where: { id: req.params.id },
+    data: {
+      deadline: deadline ? new Date(deadline) : null,
+    } as any,
+  });
+
   res.json(day);
 });
 

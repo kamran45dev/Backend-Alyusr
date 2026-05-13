@@ -86,6 +86,7 @@ model Day {
   slides       String
   isLocked     Boolean       @default(true)
   unlockAt     DateTime?     @db.Date
+  deadline     DateTime?     @db.Date
   submissions  Submission[]
   week         Week          @relation(fields: [weekId], references: [id])
 
