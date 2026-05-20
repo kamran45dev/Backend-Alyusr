@@ -124,9 +124,6 @@ router.patch("/:id", authenticate, requireAdmin, async (req: AuthRequest, res) =
 router.delete("/:id", authenticate, requireAdmin, async (req: AuthRequest, res) => {
   const batchId = req.params.id;
 
-  // Must delete in order: submissions → days → weeks → messages → enrollments → batch
-  // Prisma + MongoDB does NOT cascade automatically
-
   const weeks = await prisma.week.findMany({
     where: { batchId },
     include: { days: { select: { id: true } } },
@@ -145,6 +142,56 @@ router.delete("/:id", authenticate, requireAdmin, async (req: AuthRequest, res) 
   await prisma.batch.delete({ where: { id: batchId } });
 
   res.json({ success: true });
+});
+
+// Add a new day to an existing week
+router.post("/:batchId/weeks/:weekId/days", authenticate, requireAdmin, async (req: AuthRequest, res) => {
+  const { weekId } = req.params;
+  const { title } = req.body;
+
+  // Get current day count in this week to set dayNumber
+  const existingDays = await prisma.day.findMany({
+    where: { weekId },
+    orderBy: { dayNumber: "asc" },
+  });
+
+  const nextDayNumber = existingDays.length + 1;
+
+  const day = await prisma.day.create({
+    data: {
+      weekId,
+      dayNumber: nextDayNumber,
+      title: title || `Day ${nextDayNumber}`,
+      slides: JSON.stringify([{ type: "title", content: title || `Day ${nextDayNumber}` }]),
+      isLocked: true,
+    },
+  });
+
+  res.json(day);
+});
+
+// Add a new week to an existing batch
+router.post("/:batchId/weeks", authenticate, requireAdmin, async (req: AuthRequest, res) => {
+  const { batchId } = req.params;
+  const { title } = req.body;
+
+  const existingWeeks = await prisma.week.findMany({
+    where: { batchId },
+    orderBy: { weekNumber: "asc" },
+  });
+
+  const nextWeekNumber = existingWeeks.length + 1;
+
+  const week = await prisma.week.create({
+    data: {
+      batchId,
+      weekNumber: nextWeekNumber,
+      title: title || `Week ${nextWeekNumber}`,
+    },
+    include: { days: true },
+  });
+
+  res.json(week);
 });
 
 export default router;
