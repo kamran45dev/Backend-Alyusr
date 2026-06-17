@@ -1,0 +1,16 @@
+(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[626],{4208:function(e,r,t){Promise.resolve().then(t.bind(t,8728))},1066:function(e,r,t){"use strict";t.d(r,{Z:function(){return s}});var n=t(2265),c={xmlns:"http://www.w3.org/2000/svg",width:24,height:24,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"};/**
+ * @license lucide-react v0.300.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */let i=e=>e.replace(/([a-z0-9])([A-Z])/g,"$1-$2").toLowerCase().trim(),s=(e,r)=>{let t=(0,n.forwardRef)((t,s)=>{let{color:o="currentColor",size:a=24,strokeWidth:l=2,absoluteStrokeWidth:u,className:m="",children:d,...y}=t;return(0,n.createElement)("svg",{ref:s,...c,width:a,height:a,stroke:o,strokeWidth:u?24*Number(l)/Number(a):l,className:["lucide","lucide-".concat(i(e)),m].join(" "),...y},[...r.map(e=>{let[r,t]=e;return(0,n.createElement)(r,t)}),...Array.isArray(d)?d:[d]])});return t.displayName="".concat(e),t}},2626:function(e,r,t){"use strict";t.d(r,{Z:function(){return n}});/**
+ * @license lucide-react v0.300.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */let n=(0,t(1066).Z)("Code2",[["path",{d:"m18 16 4-4-4-4",key:"1inbqp"}],["path",{d:"m6 8-4 4 4 4",key:"15zrgr"}],["path",{d:"m14.5 4-5 16",key:"e7oirm"}]])},8728:function(e,r,t){"use strict";t.r(r),t.d(r,{default:function(){return s}});var n=t(7437),c=t(2626);/**
+ * @license lucide-react v0.300.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */let i=(0,t(1066).Z)("Chrome",[["circle",{cx:"12",cy:"12",r:"10",key:"1mglay"}],["circle",{cx:"12",cy:"12",r:"4",key:"4exip2"}],["line",{x1:"21.17",x2:"12",y1:"8",y2:"8",key:"a0cw5f"}],["line",{x1:"3.95",x2:"8.54",y1:"6.06",y2:"14",key:"1kftof"}],["line",{x1:"10.88",x2:"15.46",y1:"21.94",y2:"14",key:"1ymyh8"}]]);function s(){return(0,n.jsx)("div",{className:"min-h-screen flex items-center justify-center bg-gray-50 px-4",children:(0,n.jsxs)("div",{className:"card w-full max-w-md text-center",children:[(0,n.jsx)("div",{className:"w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-6",children:(0,n.jsx)(c.Z,{className:"w-8 h-8 text-primary-600"})}),(0,n.jsx)("h1",{className:"text-2xl font-bold text-gray-900 mb-2",children:"Welcome to CodeMaster"}),(0,n.jsx)("p",{className:"text-gray-600 mb-8",children:"Sign in to access your coding curriculum"}),(0,n.jsxs)("a",{href:"".concat("https://your-backend.onrender.com","/api/auth/google"),className:"w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors font-medium",children:[(0,n.jsx)(i,{className:"w-5 h-5"}),"Continue with Google"]}),(0,n.jsx)("p",{className:"text-xs text-gray-500 mt-6",children:"By signing in, you agree to our terms."})]})})}}},function(e){e.O(0,[971,23,744],function(){return e(e.s=4208)}),_N_E=e.O()}]);

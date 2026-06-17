@@ -1,0 +1,12 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/auth/callback/page": "app/auth/callback/page.js",
+  "/dashboard/admin/batches/[id]/page": "app/dashboard/admin/batches/[id]/page.js",
+  "/dashboard/admin/batches/new/page": "app/dashboard/admin/batches/new/page.js",
+  "/dashboard/admin/page": "app/dashboard/admin/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/day/[id]/page": "app/day/[id]/page.js",
+  "/leaderboard/page": "app/leaderboard/page.js",
+  "/login/page": "app/login/page.js",
+  "/page": "app/page.js"
+}
