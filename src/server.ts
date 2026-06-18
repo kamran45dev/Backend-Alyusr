@@ -1,4 +1,5 @@
 import express from "express";
+import path from "path";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -17,6 +18,7 @@ import leaderboardRoutes from "./routes/leaderboard";
 import enrollmentRoutes from "./routes/enrollments";
 import userRoutes from "./routes/users";
 import chatRoutes from "./routes/chat";
+import uploadRoutes from "./routes/upload";
 
 dotenv.config();
 
@@ -61,6 +63,10 @@ app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/enrollments", enrollmentRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/upload", uploadRoutes);
+
+// Serve uploaded files statically
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // Socket.io for live chat
 io.on("connection", (socket) => {

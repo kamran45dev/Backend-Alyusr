@@ -48,6 +48,7 @@ model Batch {
   startDate   DateTime     @db.Date
   endDate     DateTime?    @db.Date
   isActive    Boolean      @default(true)
+  imageUrl    String?
   weeks       Week[]
   enrollments Enrollment[]
   messages    Message[]

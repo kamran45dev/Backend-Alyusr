@@ -40,12 +40,13 @@ router.get("/", authenticate, async (req: AuthRequest, res) => {
 });
 
 router.post("/", authenticate, requireAdmin, async (req: AuthRequest, res) => {
-  const { name, description, startDate, weeks } = req.body;
+  const { name, description, startDate, imageUrl, weeks } = req.body;
 
   const batch = await prisma.batch.create({
     data: {
       name,
       description,
+      imageUrl: imageUrl || null,
       startDate: new Date(startDate),
       weeks: {
         create: weeks.map((w: any, wi: number) => ({
@@ -106,13 +107,14 @@ router.get("/:id", authenticate, async (req: AuthRequest, res) => {
 });
 
 router.patch("/:id", authenticate, requireAdmin, async (req: AuthRequest, res) => {
-  const { isActive, name, description, startDate, endDate } = req.body;
+  const { isActive, name, description, startDate, endDate, imageUrl } = req.body;
   const data: any = {};
   if (typeof isActive === "boolean") data.isActive = isActive;
   if (name !== undefined) data.name = name;
   if (description !== undefined) data.description = description;
   if (startDate !== undefined) data.startDate = new Date(startDate);
   if (endDate !== undefined) data.endDate = endDate ? new Date(endDate) : null;
+  if (imageUrl !== undefined) data.imageUrl = imageUrl || null;
 
   const batch = await prisma.batch.update({
     where: { id: req.params.id },
