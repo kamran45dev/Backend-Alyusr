@@ -114,7 +114,7 @@ router.patch("/:id", authenticate, requireAdmin, async (req: AuthRequest, res) =
   if (description !== undefined) data.description = description;
   if (startDate !== undefined) data.startDate = new Date(startDate);
   if (endDate !== undefined) data.endDate = endDate ? new Date(endDate) : null;
-  if (imageUrl !== undefined) data.imageUrl = imageUrl || null;
+  if (imageUrl !== undefined) data.imageUrl = imageUrl !== undefined ? imageUrl : undefined;
 
   const batch = await prisma.batch.update({
     where: { id: req.params.id },
