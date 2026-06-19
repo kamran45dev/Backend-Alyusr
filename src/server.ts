@@ -65,8 +65,12 @@ app.use("/api/users", userRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/upload", uploadRoutes);
 
-// Serve uploaded files statically
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+// Serve uploaded files statically (allow cross-origin for images)
+app.use("/uploads", (req, res, next) => {
+  res.removeHeader("Cross-Origin-Resource-Policy");
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  next();
+}, express.static(path.join(process.cwd(), "uploads")));
 
 // Socket.io for live chat
 io.on("connection", (socket) => {

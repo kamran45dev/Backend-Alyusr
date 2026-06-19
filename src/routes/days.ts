@@ -121,7 +121,7 @@ router.post("/:id/slides/pptx", authenticate, requireAdmin, pptxUpload.single("f
     }
     const results = await convertPptxToPng(pptxBuffer, { width: 1920 });
 
-    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
+    const baseUrl = process.env.BASE_URL || `https://${req.get("host")}`;
     const newSlides: { type: string; content: string }[] = [];
 
     for (const slide of results) {

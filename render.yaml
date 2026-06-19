@@ -23,4 +23,4 @@ services:
       - key: ADMIN_EMAILS
         sync: false
       - key: BASE_URL
-        sync: false
+        value: https://backendalyusr.onrender.com

@@ -32,7 +32,7 @@ router.post("/", authenticate, upload.single("file"), (req: AuthRequest, res) =>
     return res.status(400).json({ error: "No valid file uploaded. Allowed: png, jpg, webp, pptx" });
   }
 
-  const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
+  const baseUrl = process.env.BASE_URL || `https://${req.get("host")}`;
   const url = `${baseUrl}/uploads/${req.file.filename}`;
 
   res.json({ url });
