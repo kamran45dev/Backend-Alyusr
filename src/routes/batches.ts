@@ -103,7 +103,19 @@ router.get("/:id", authenticate, async (req: AuthRequest, res) => {
   });
 
   if (!batch) return res.status(404).json({ error: "Not found" });
-  res.json(batch);
+
+  const result = {
+    ...batch,
+    weeks: batch.weeks.map((week: any) => ({
+      ...week,
+      days: week.days.map((day: any) => ({
+        ...day,
+        slides: typeof day.slides === "string" ? JSON.parse(day.slides) : day.slides,
+      })),
+    })),
+  };
+
+  res.json(result);
 });
 
 router.patch("/:id", authenticate, requireAdmin, async (req: AuthRequest, res) => {
