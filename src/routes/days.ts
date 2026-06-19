@@ -39,49 +39,7 @@ router.get("/:id", authenticate, async (req: AuthRequest, res) => {
   const now = new Date();
   const isExpired = day.deadline ? now > day.deadline : false;
 
-  let slides = JSON.parse(day.slides);
-  const pptxSlides = slides.filter((s: any) => s.type === "pptx" && s.content);
-
-  if (pptxSlides.length > 0) {
-    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
-    const imageSlides: { type: string; content: string }[] = [];
-
-    for (const pptx of pptxSlides) {
-      try {
-        const res = await fetch(pptx.content);
-        if (!res.ok) {
-          console.error(`Auto-conversion: failed to fetch ${pptx.content} (status ${res.status})`);
-          continue;
-        }
-        const contentType = res.headers.get("content-type") || "";
-        if (contentType.includes("text/html")) {
-          console.error(`Auto-conversion: URL returned HTML instead of PPTX: ${pptx.content}`);
-          continue;
-        }
-        const buffer = Buffer.from(await res.arrayBuffer());
-        if (buffer[0] !== 0x50 || buffer[1] !== 0x4b) {
-          console.error(`Auto-conversion: file is not a valid PPTX (missing PK header): ${pptx.content}`);
-          continue;
-        }
-        const results = await convertPptxToPng(buffer, { width: 1920 });
-        for (const slide of results) {
-          const filename = `${crypto.randomBytes(16).toString("hex")}.png`;
-          fs.writeFileSync(path.join("uploads", filename), slide.png);
-          imageSlides.push({ type: "image", content: `${baseUrl}/uploads/${filename}` });
-        }
-      } catch (err) {
-        console.error("Auto-conversion failed for pptx slide:", err);
-      }
-    }
-
-    if (imageSlides.length > 0) {
-      slides = [...slides.filter((s: any) => s.type !== "pptx"), ...imageSlides];
-      await prisma.day.update({
-        where: { id: day.id },
-        data: { slides: JSON.stringify(slides) },
-      });
-    }
-  }
+  const slides = JSON.parse(day.slides);
 
   res.json({
     ...day,
@@ -152,12 +110,12 @@ const pptxUpload = multer({
 
 router.post("/:id/slides/pptx", authenticate, requireAdmin, pptxUpload.single("file"), async (req: AuthRequest, res) => {
   if (!req.file) {
-    return res.status(400).json({ error: "No valid PPTX file uploaded" });
+    return res.status(400).json({ error: "No valid PPTX file uploaded. Accepts .pptx files only, max 50MB." });
   }
 
   try {
     const pptxBuffer = fs.readFileSync(req.file.path);
-    if (pptxBuffer[0] !== 0x50 || pptxBuffer[1] !== 0x4b) {
+    if (pptxBuffer.length < 4 || pptxBuffer[0] !== 0x50 || pptxBuffer[1] !== 0x4b) {
       fs.unlinkSync(req.file.path);
       return res.status(400).json({ error: "Uploaded file is not a valid PPTX" });
     }
