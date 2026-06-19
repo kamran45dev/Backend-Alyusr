@@ -1,4 +1,8 @@
 import { Router } from "express";
+import multer from "multer";
+import path from "path";
+import crypto from "crypto";
+import { convertPptxToPng } from "pptx-glimpse";
 import { authenticate, requireAdmin, AuthRequest } from "../middleware/auth";
 import { prisma } from "../lib/prisma";
 
@@ -82,6 +86,59 @@ router.patch("/:id/slides", authenticate, requireAdmin, async (req: AuthRequest,
   });
 
   res.json({ ...day, slides: JSON.parse(day.slides) });
+});
+
+const pptxStorage = multer.diskStorage({
+  destination: "./uploads/",
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, crypto.randomBytes(16).toString("hex") + ext);
+  },
+});
+
+const pptxUpload = multer({
+  storage: pptxStorage,
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+    cb(null, file.mimetype === allowed);
+  },
+});
+
+router.post("/:id/slides/pptx", authenticate, requireAdmin, pptxUpload.single("file"), async (req: AuthRequest, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: "No valid PPTX file uploaded" });
+  }
+
+  try {
+    const pptxBuffer = require("fs").readFileSync(req.file.path);
+    const results = await convertPptxToPng(pptxBuffer, { width: 1920 });
+
+    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
+    const newSlides: { type: string; content: string }[] = [];
+
+    for (const slide of results) {
+      const filename = `${crypto.randomBytes(16).toString("hex")}.png`;
+      const filepath = path.join("uploads", filename);
+      require("fs").writeFileSync(filepath, slide.png);
+      newSlides.push({ type: "image", content: `${baseUrl}/uploads/${filename}` });
+    }
+
+    require("fs").unlinkSync(req.file.path);
+
+    const day = await prisma.day.findUnique({ where: { id: req.params.id } });
+    const existingSlides = day ? JSON.parse(day.slides) : [];
+
+    const updated = await prisma.day.update({
+      where: { id: req.params.id },
+      data: { slides: JSON.stringify([...existingSlides, ...newSlides]) },
+    });
+
+    res.json({ slides: [...existingSlides, ...newSlides], totalSlides: newSlides.length });
+  } catch (err) {
+    console.error("PPTX conversion error:", err);
+    res.status(500).json({ error: "Failed to convert PPTX file" });
+  }
 });
 
 export default router;
