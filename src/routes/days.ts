@@ -49,7 +49,20 @@ router.get("/:id", authenticate, async (req: AuthRequest, res) => {
     for (const pptx of pptxSlides) {
       try {
         const res = await fetch(pptx.content);
+        if (!res.ok) {
+          console.error(`Auto-conversion: failed to fetch ${pptx.content} (status ${res.status})`);
+          continue;
+        }
+        const contentType = res.headers.get("content-type") || "";
+        if (contentType.includes("text/html")) {
+          console.error(`Auto-conversion: URL returned HTML instead of PPTX: ${pptx.content}`);
+          continue;
+        }
         const buffer = Buffer.from(await res.arrayBuffer());
+        if (buffer[0] !== 0x50 || buffer[1] !== 0x4b) {
+          console.error(`Auto-conversion: file is not a valid PPTX (missing PK header): ${pptx.content}`);
+          continue;
+        }
         const results = await convertPptxToPng(buffer, { width: 1920 });
         for (const slide of results) {
           const filename = `${crypto.randomBytes(16).toString("hex")}.png`;
@@ -143,7 +156,11 @@ router.post("/:id/slides/pptx", authenticate, requireAdmin, pptxUpload.single("f
   }
 
   try {
-    const pptxBuffer = require("fs").readFileSync(req.file.path);
+    const pptxBuffer = fs.readFileSync(req.file.path);
+    if (pptxBuffer[0] !== 0x50 || pptxBuffer[1] !== 0x4b) {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ error: "Uploaded file is not a valid PPTX" });
+    }
     const results = await convertPptxToPng(pptxBuffer, { width: 1920 });
 
     const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
@@ -152,11 +169,11 @@ router.post("/:id/slides/pptx", authenticate, requireAdmin, pptxUpload.single("f
     for (const slide of results) {
       const filename = `${crypto.randomBytes(16).toString("hex")}.png`;
       const filepath = path.join("uploads", filename);
-      require("fs").writeFileSync(filepath, slide.png);
+      fs.writeFileSync(filepath, slide.png);
       newSlides.push({ type: "image", content: `${baseUrl}/uploads/${filename}` });
     }
 
-    require("fs").unlinkSync(req.file.path);
+    fs.unlinkSync(req.file.path);
 
     const day = await prisma.day.findUnique({ where: { id: req.params.id } });
     const existingSlides = day ? JSON.parse(day.slides) : [];
