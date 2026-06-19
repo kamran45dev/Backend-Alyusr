@@ -2,6 +2,7 @@ import { Router } from "express";
 import multer from "multer";
 import path from "path";
 import crypto from "crypto";
+import fs from "fs";
 import { convertPptxToPng } from "pptx-glimpse";
 import { authenticate, requireAdmin, AuthRequest } from "../middleware/auth";
 import { prisma } from "../lib/prisma";
@@ -38,9 +39,40 @@ router.get("/:id", authenticate, async (req: AuthRequest, res) => {
   const now = new Date();
   const isExpired = day.deadline ? now > day.deadline : false;
 
+  let slides = JSON.parse(day.slides);
+  const pptxSlides = slides.filter((s: any) => s.type === "pptx" && s.content);
+
+  if (pptxSlides.length > 0) {
+    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
+    const imageSlides: { type: string; content: string }[] = [];
+
+    for (const pptx of pptxSlides) {
+      try {
+        const res = await fetch(pptx.content);
+        const buffer = Buffer.from(await res.arrayBuffer());
+        const results = await convertPptxToPng(buffer, { width: 1920 });
+        for (const slide of results) {
+          const filename = `${crypto.randomBytes(16).toString("hex")}.png`;
+          fs.writeFileSync(path.join("uploads", filename), slide.png);
+          imageSlides.push({ type: "image", content: `${baseUrl}/uploads/${filename}` });
+        }
+      } catch (err) {
+        console.error("Auto-conversion failed for pptx slide:", err);
+      }
+    }
+
+    if (imageSlides.length > 0) {
+      slides = [...slides.filter((s: any) => s.type !== "pptx"), ...imageSlides];
+      await prisma.day.update({
+        where: { id: day.id },
+        data: { slides: JSON.stringify(slides) },
+      });
+    }
+  }
+
   res.json({
     ...day,
-    slides: JSON.parse(day.slides),
+    slides,
     isExpired,
   });
 });
